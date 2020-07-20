@@ -1,0 +1,83 @@
+﻿@page "/"
+@inject IIndexedDbFactory DbFactory
+
+<h1>Hello, world!</h1>
+
+<button class="btn btn-primary" @onclick="(() => Create())" >Load Data</button>
+
+@if (persons == null)
+{
+    <p><em>Loading...</em></p>
+}
+else {
+    <table class="table">
+        <thead>
+            <tr>
+                <th>First Name</th>
+                <th>Last Name</th>
+                <th>Dog name</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in persons)
+            {
+            <tr>
+                <td>@item.FirstName</td>
+                <td>@item.LastName</td>
+                <td>@item.Dog.Name</td>
+                <td><button class="btn btn-link" @onclick="(()=> Delete(item))">Delete</button></td>
+            </tr>
+            }
+
+        </tbody>
+    </table>
+}
+
+@code{
+    List<Person> persons;
+
+    protected async override Task OnInitializedAsync()
+    {
+        using (var db = await this.DbFactory.Create<ExampleDb>())
+        {
+            var data = db.People.ToList();
+            persons = data;
+        }
+    }
+
+    protected async Task Delete(Person person)
+    {
+        using (var db = await this.DbFactory.Create<ExampleDb>())
+        {
+            var data = db.People.ToList();
+            db.People.Remove(person);
+
+            await db.SaveChanges();
+            await OnInitializedAsync();
+        }
+    }
+
+    protected async Task Create()
+    {
+        using (var db = await this.DbFactory.Create<ExampleDb>())
+        {
+            for (int i = 0; i < 10; i++)
+            {
+                db.People.Add(new Person()
+                {
+                    FirstName = Guid.NewGuid().ToString(),
+                    LastName = Guid.NewGuid().ToString(),
+                    Dog = new Dog()
+                    {
+                        Name = Guid.NewGuid().ToString()
+                    }
+                });
+            }
+
+            await db.SaveChanges();
+
+            await OnInitializedAsync();
+        }
+    }
+}
