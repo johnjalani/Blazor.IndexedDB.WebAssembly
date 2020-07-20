@@ -1,7 +1,7 @@
 ![Nuget](https://img.shields.io/nuget/v/Johnjalani.Blazor.IndexedDB.WebAssembly?style=plastic)
 ![GitHub](https://img.shields.io/github/license/johnjalani/Blazor.IndexedDB.WebAssembly?style=plastic)
 
-https://images.app.goo.gl/BCED5EA7wZbY735Q7
+![GitHub Logo](https://images.app.goo.gl/BCED5EA7wZbY735Q7)
 Blazor.IndexedDB.WebAssembly
 
 An easy way to interact with IndexedDB and make it feel like EFCore but async.
