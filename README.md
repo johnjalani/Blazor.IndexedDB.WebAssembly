@@ -7,7 +7,7 @@ An easy way to interact with IndexedDB and make it feel like EFCore but async.
 
 # NuGet installation
 ```powershell
-PM> Install-Package Johnjalani.Blazor.IndexedDB.WebAssembly -Version 1.1.0
+PM> Install-Package Johnjalani.Blazor.IndexedDB.WebAssembly
 ```
 ## How to use
 1. In your program.cs file add
