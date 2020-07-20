@@ -7,7 +7,7 @@ An easy way to interact with IndexedDB and make it feel like EFCore but async.
 
 # NuGet installation
 ```powershell
-PM> Install-Package Blazor.IndexedDB.WebAssembly
+PM> Install-Package Johnjalani.Blazor.IndexedDB.WebAssembly -Version 1.1.0
 ```
 ## How to use
 1. In your program.cs file add
@@ -24,15 +24,15 @@ IndexedDbFactory requires an instance IJSRuntime, should normally already be reg
 
 3. Create any code first database model you'd like to create and inherit from IndexedDb. (Only properties with the type IndexedSet<> will be used, any other properties are beeing ignored)
 ```CSharp
-public class ExampleDb : IndexedDb
+public class ContextDb : IndexedDb
 {
-  public ExampleDb(IJSRuntime jSRuntime, string name, int version) : base(jSRuntime, name, version) { }
-  public IndexedSet<Person> People { get; set; }
+  public ContextDb(IJSRuntime jSRuntime, string name, int version) : base(jSRuntime, name, version) { }
+  public IndexedSet<Student> Student { get; set; }
 }
 ```
-- Your model (eg. person) should contain an Id property or a property marked with the key attribute.
+- Your model (eg. Student) should contain an Id property or a property marked with the key attribute.
 ```CSharp
-public class Person
+public class Student
 {
   [System.ComponentModel.DataAnnotations.Key]
   public long Id { get; set; }
@@ -46,9 +46,9 @@ public class Person
 
 ### Adding records
 ```CSharp
-using (var db = await this.DbFactory.Create<ExampleDb>())
+using (var db = await this.DbFactory.Create<ContextDb>())
 {
-  db.People.Add(new Person()
+  db.Student.Add(new Student()
   {
     FirstName = "First",
     LastName = "Last"
@@ -59,19 +59,19 @@ using (var db = await this.DbFactory.Create<ExampleDb>())
 ### Removing records
 Note: To remove an element it is faster to use a already created reference. You should be able to also remove an object only by it's id but you have to use the .Remove(object) method (eg. .Remove(new object() { Id = 1 }))
 ```CSharp
-using (var db = await this.DbFactory.Create<ExampleDb>())
+using (var db = await this.DbFactory.Create<ContextDb>())
 {
-  var firstPerson = db.People.First();
-  db.People.Remove(firstPerson);
+  var firstStudent = db.Student.First();
+  db.Student.Remove(firstStudent);
   await db.SaveChanges();
 }
 ```
 ### Modifying records
 ```CSharp
-using (var db = await this.DbFactory.Create<ExampleDb>())
+using (var db = await this.DbFactory.Create<ContextDb>())
 {
-  var personWithId1 = db.People.Single(x => x.Id == 1);
-  personWithId1.FirstName = "This is 100% a first name";
+  var studentWithId1 = db.Student.Single(x => x.Id == 1);
+  studentWithId1.FirstName = "This is 100% a first name";
   await db.SaveChanges();
 }
 ```
