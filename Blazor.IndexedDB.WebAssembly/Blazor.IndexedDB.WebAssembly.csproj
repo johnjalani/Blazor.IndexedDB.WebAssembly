@@ -19,10 +19,11 @@
     <PackageId>Johnjalani.Blazor.IndexedDB.WebAssembly</PackageId>
     <PackageIconUrl></PackageIconUrl>
     <RootNamespace>Blazor.IndexedDB.WebAssembly</RootNamespace>
-    <AssemblyVersion>1.1.0.0</AssemblyVersion>
-    <FileVersion>1.1.0.0</FileVersion>
+    <AssemblyVersion>1.1.0.1</AssemblyVersion>
+    <FileVersion>1.1.0.1</FileVersion>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <PackageIcon>fire.png</PackageIcon>
+    <PackageProjectUrl>https://github.com/johnjalani/Blazor.IndexedDB.WebAssembly</PackageProjectUrl>
   </PropertyGroup>
 
   <ItemGroup>
