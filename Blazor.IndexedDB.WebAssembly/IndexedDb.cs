@@ -304,7 +304,7 @@ namespace Blazor.IndexedDB.WebAssembly
 
                 var pkProperty = this.GetPrimaryKey(propertyType, table.Name);
 
-                if (table.GetValue(this) is IndexedSet existingTable)
+                if (table.GetValue(this) is IIndexedSet existingTable)
                 {
                     Debug.WriteLine($"{nameof(IndexedDb)} - Update table {table.Name}");
                     existingTable.SetRecords(records);

@@ -7,7 +7,7 @@ using System.Reflection;
 
 namespace Blazor.IndexedDB.WebAssembly
 {
-    public interface IndexedSet: IEnumerable
+    public interface IIndexedSet : IEnumerable
     {
         /// <summary>
         /// Update internal records. This is called when the IndexedDB reloads its data. It avoids re-creating <see cref="IndexedSet{T}"/>.
@@ -15,7 +15,18 @@ namespace Blazor.IndexedDB.WebAssembly
         /// <param name="records">The new records.</param>
         internal void SetRecords(object records);
     }
-    public class IndexedSet<T> : IndexedSet, IEnumerable<T> where T : new()
+    public interface IIndexedSet<T> : IIndexedSet, IEnumerable<T>
+    {
+        bool IsReadOnly { get; }
+        int Count { get; }
+        string Name { get; }
+        internal void SetRecords(IEnumerable<T> records);
+        void Add(T item);
+        void Clear();
+        bool Contains(T item);
+        bool Remove(T item);
+    }
+    public class IndexedSet<T> : IIndexedSet<T>, IEnumerable<T> where T : new()
     {
         /// <summary>
         /// The internal stored items
@@ -29,10 +40,10 @@ namespace Blazor.IndexedDB.WebAssembly
         // ToDo: Remove PK dependency
         public IndexedSet(IEnumerable<T> records, string name, PropertyInfo primaryKey)
         {
-            Name = name;
+            this.Name = name;
             this.primaryKey = primaryKey;
             this.internalItems = new List<IndexedEntity<T>>();
-            this.SetRecords(records);
+            ((IIndexedSet)this).SetRecords(records);
         }
 
         public bool IsReadOnly => false;
@@ -45,11 +56,11 @@ namespace Blazor.IndexedDB.WebAssembly
         /// Update internal records. This is called when the IndexedDB reloads its data. It avoids re-creating <see cref="IndexedSet{T}"/>.
         /// </summary>
         /// <param name="records">The new records.</param>
-        void IndexedSet.SetRecords(object records)
+        void IIndexedSet.SetRecords(object records)
         {
-            SetRecords((List<T>)records);
+            ((IIndexedSet<T>)this).SetRecords((List<T>)records);
         }
-        internal void SetRecords(IEnumerable<T> records)
+        void IIndexedSet<T>.SetRecords(IEnumerable<T> records)
         {
             this.internalItems.Clear();
             if (records == null)
@@ -138,7 +149,7 @@ namespace Blazor.IndexedDB.WebAssembly
 
         IEnumerator IEnumerable.GetEnumerator()
         {
-            var enumerator =  this.GetEnumerator();
+            var enumerator = this.GetEnumerator();
 
             return enumerator;
         }
