@@ -15,7 +15,7 @@ namespace Blazor.IndexedDB.WebAssembly
 {
     public abstract class IndexedDb : IDisposable
     {
-        private readonly Task init;
+        private Task init;
 
         private IndexedDBManager connector;
 
@@ -36,8 +36,7 @@ namespace Blazor.IndexedDB.WebAssembly
             Debug.WriteLine($"{nameof(IndexedDb)} - Opening connector");
             this.connector = new IndexedDBManager(dbStore, jSRuntime);
 
-            Debug.WriteLine($"{nameof(IndexedDb)} - Loading data");
-            this.init = this.LoadData();
+            this.Reload();
 
             this.connector.ActionCompleted += Connector_ActionCompleted;
         }
@@ -78,8 +77,8 @@ namespace Blazor.IndexedDB.WebAssembly
             foreach (var table in tables)
             {
                 var indexedSet = table.GetValue(this);
-                
-                // Find pk here to reduce required save time if more than one row has been deleted 
+
+                // Find pk here to reduce required save time if more than one row has been deleted
                 PropertyInfo pkProperty = null;
 
                 foreach (var row in indexedSet.GetType().GetMethod("GetChanged", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(indexedSet, null) as IEnumerable<IndexedEntity>)
@@ -277,6 +276,17 @@ namespace Blazor.IndexedDB.WebAssembly
             return rowType.GetProperties().Single(x => this.FirstToLower(x.Name) == storePk);
         }
 
+        /// <summary>
+        /// Reload all records of all tables from the underlying IndexedDB database. This method avoids disposing previous DB context & re-instanciating when <see cref="IndexedSet{T}.Clear"/> is used.
+        /// </summary>
+        /// <returns>A task resolving when loading has been done.</returns>
+        public Task Reload()
+        {
+            Debug.WriteLine($"{nameof(IndexedDb)} - Loading data");
+            this.init = this.LoadData();
+            return this.init;
+        }
+
         private async Task LoadData()
         {
             // Get all tables
@@ -294,8 +304,17 @@ namespace Blazor.IndexedDB.WebAssembly
 
                 var pkProperty = this.GetPrimaryKey(propertyType, table.Name);
 
-                Debug.WriteLine($"{nameof(IndexedDb)} - Set table {table.Name}");
-                table.SetValue(this, Activator.CreateInstance(table.PropertyType, records, pkProperty));
+                if (table.GetValue(this) is IIndexedSet existingTable)
+                {
+                    Debug.WriteLine($"{nameof(IndexedDb)} - Update table {table.Name}");
+                    existingTable.SetRecords(records);
+                    table.SetValue(this, table.GetValue(this));
+                }
+                else
+                {
+                    Debug.WriteLine($"{nameof(IndexedDb)} - Create table {table.Name}");
+                    table.SetValue(this, Activator.CreateInstance(table.PropertyType, records, table.Name, pkProperty));
+                }
 
             }
         }
