@@ -8,6 +8,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using TG.Blazor.IndexedDB;
 
@@ -78,8 +79,8 @@ namespace Blazor.IndexedDB.WebAssembly
             foreach (var table in tables)
             {
                 var indexedSet = table.GetValue(this);
-                
-                // Find pk here to reduce required save time if more than one row has been deleted 
+
+                // Find pk here to reduce required save time if more than one row has been deleted or added
                 PropertyInfo pkProperty = null;
 
                 foreach (var row in indexedSet.GetType().GetMethod("GetChanged", BindingFlags.NonPublic | BindingFlags.Instance).Invoke(indexedSet, null) as IEnumerable<IndexedEntity>)
@@ -91,7 +92,12 @@ namespace Blazor.IndexedDB.WebAssembly
                         case EntityState.Unchanged:
                             continue;
                         case EntityState.Added:
-                            await this.AddRow(table.Name, row.Instance);
+                            if (pkProperty == null)
+                            {
+                                pkProperty = this.GetPrimaryKey(row.Instance.GetType(), table.Name);
+                            }
+
+                            await this.AddRow(table.Name, row.Instance, pkProperty);
                             break;
                         case EntityState.Deleted:
                             if (pkProperty == null)
@@ -329,11 +335,35 @@ namespace Blazor.IndexedDB.WebAssembly
         /// <param name="storeName"></param>
         /// <param name="data"></param>
         /// <returns></returns>
-        private async Task AddRow(string storeName, object data)
+        private async Task AddRow(string storeName, object data, PropertyInfo pkProperty)
         {
             var storeRecord = this.ConvertToObjectRecord(storeName, data);
 
-            await this.connector.AddRecord<object>(storeRecord);
+            // Intercept IndexedDbManager notification, that contains the ID of the inserted item
+            IndexedDBNotificationArgs? notification = null;
+            void ActionCompletedCb(object source, IndexedDBNotificationArgs args) => notification = args;
+
+            try
+            {
+                this.connector.ActionCompleted += ActionCompletedCb;
+                await this.connector.AddRecord<object>(storeRecord);
+                // IndexedDbManager should have emitted a notification here.
+                if(notification is null)
+                {
+                    throw new InvalidOperationException("No notification was retrieved from insertion");
+                }
+                // Extract new item ID from message. Format of message is from
+                // https://github.com/wtulloch/Blazor.IndexedDB/blob/master/TG.Blazor.IndexedDb/IndexedDB/IndexedDBManager.cs#L127 =>
+                // https://github.com/wtulloch/Blazor.IndexedDB/blob/master/TG.Blazor.IndexedDb/client/indexedDbBlazor.ts#L78
+                var id = Convert.ChangeType(int.Parse(new Regex("\\d+$").Match(notification.Message).Value), pkProperty.PropertyType);
+                Debug.WriteLine($"{nameof(IndexedDb)} - {storeName} - Inserted item {id}");
+                pkProperty.SetValue(data, id, null);
+            }
+            finally
+            {
+                // Unbind notification interceptor
+                this.connector.ActionCompleted -= ActionCompletedCb;
+            }
 
             // TODO: OLD GENERIC IMPLEMENTATION / REMOVE
             //Type[] typeArgs = { data.GetType() };
